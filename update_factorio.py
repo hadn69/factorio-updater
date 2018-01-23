@@ -54,13 +54,10 @@ def version_key(v):
 def get_updater_data(user, token):
     payload = {'username': user, 'token': token, 'apiVersion': 2}
     r = requests.get('https://updater.factorio.com/get-available-versions', params=payload)
+    if glob['verbose']:
+        print(r.url.replace(token, '<secret>'))
     if r.status_code != 200:
         raise DownloadFailed('Could not download version list.', r.status_code)
-    if glob['verbose']:
-        if token is not None:
-            print(r.url.replace(token, '<secret>'))
-        else:
-            print(r.url)
     return r.json()
 
 
@@ -116,10 +113,7 @@ def get_update_link(username, token, package, update):
                'apiVersion': 2}
     r = requests.get('https://updater.factorio.com/get-download-link', params=payload)
     if glob['verbose']:
-        if token is not None:
-            print(r.url.replace(token, '<secret>'))
-        else:
-            print(r.url)
+        print(r.url.replace(token, '<secret>'))
     if r.status_code != 200:
         raise DownloadFailed('Could not obtain download link.', r.status_code, update)
     return r.json()[0]
@@ -137,6 +131,8 @@ def fetch_update(output_path, url):
 
 def verbose_aware_exec(exec_args, verbose=False):
     try:
+        subprocess.check_output(['chmod', '+x', exec_args[0]])
+        print(exec_args)
         captured = subprocess.check_output(exec_args, stderr=subprocess.STDOUT)
         if verbose:
             print(captured)
@@ -150,6 +146,7 @@ def find_version(args):
         return args.for_version
 
     if args.for_version is None and args.apply_to is not None:
+        subprocess.check_output(['chmod', '+x', args.apply_to])
         version_output = subprocess.check_output([args.apply_to, "--version"], universal_newlines=True)
         source_version = re.match("Version: (\d+\.\d+\.\d+)", version_output)
         if source_version:
